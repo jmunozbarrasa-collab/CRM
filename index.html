@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CRM Limpieza</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--bgCard:#161b27;--bgSurface:#1c2333;
+  --border:#252d3d;--borderHover:#3a4460;
+  --accent:#4f8ef7;--accentSoft:#1e3a6e;
+  --success:#22c55e;--successSoft:#14532d;
+  --warning:#f59e0b;--warningSoft:#451a03;
+  --danger:#ef4444;--dangerSoft:#450a0a;
+  --text:#e8e9ed;--textMuted:#6b7280;--textSub:#9ca3af;
+  --purple:#a78bfa;--purpleSoft:#2e1065;
+  --teal:#2dd4bf;--tealSoft:#042f2e;
+  --yellow:#fcd34d;--yellowSoft:#451a03;
+}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#2a2d3a;border-radius:4px}
+input,select,textarea,button{font-family:'DM Sans',sans-serif}
+
+/* Layout */
+.app{display:flex;min-height:100vh}
+.sidebar{width:210px;background:var(--bgCard);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;bottom:0;left:0;z-index:100}
+.main{flex:1;margin-left:210px;overflow:auto;transition:margin-right .2s}
+.main.panel-open{margin-right:380px}
+.content{max-width:960px;margin:0 auto;padding:28px 24px}
+
+/* Sidebar */
+.sidebar-header{padding:20px 18px 16px;border-bottom:1px solid var(--border)}
+.sidebar-logo{font-size:13px;font-weight:600;letter-spacing:.02em;color:var(--text)}
+.sidebar-sub{font-size:10px;color:var(--textMuted);margin-top:2px}
+.sidebar-nav{padding:8px 0;flex:1}
+.nav-btn{width:100%;display:flex;align-items:center;gap:10px;padding:9px 18px;background:none;border:none;border-left:2px solid transparent;cursor:pointer;color:var(--textMuted);font-size:13px;text-align:left;transition:all .15s}
+.nav-btn:hover{background:var(--bgSurface);color:var(--textSub)}
+.nav-btn.active{background:var(--bgSurface);color:var(--text);border-left-color:var(--accent)}
+.nav-icon{font-size:15px;width:18px;text-align:center}
+.sidebar-footer{padding:12px 18px;border-top:1px solid var(--border)}
+
+/* Top bar */
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+.topbar h1{font-size:20px;font-weight:600;color:var(--text)}
+.btn-primary{background:var(--accent);border:none;border-radius:6px;padding:8px 18px;color:#fff;cursor:pointer;font-size:13px;font-weight:500;transition:opacity .15s}
+.btn-primary:hover{opacity:.85}
+.btn-secondary{background:none;border:1px solid var(--border);border-radius:6px;padding:7px 14px;color:var(--textMuted);cursor:pointer;font-size:13px;transition:all .15s}
+.btn-secondary:hover{border-color:var(--borderHover);color:var(--textSub)}
+.btn-danger{background:none;border:1px solid var(--border);border-radius:6px;padding:7px 14px;color:var(--danger);cursor:pointer;font-size:13px}
+
+/* Stat cards */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:24px}
+.stat-card{background:var(--bgCard);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.stat-label{font-size:10px;color:var(--textMuted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.stat-value{font-size:28px;font-weight:600;font-family:'DM Mono',monospace;line-height:1}
+.stat-sub{font-size:10px;color:var(--textMuted);margin-top:5px}
+
+/* Type pills */
+.pills-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:24px}
+.pill-card{border:none;border-radius:8px;padding:12px 14px;cursor:pointer;text-align:left;transition:opacity .15s}
+.pill-card:hover{opacity:.85}
+.pill-num{font-size:22px;font-weight:700;font-family:'DM Mono',monospace;line-height:1}
+.pill-label{font-size:11px;margin-top:3px;opacity:.8}
+
+/* Filters */
+.filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-input{background:var(--bgSurface);border:1px solid var(--border);border-radius:6px;padding:7px 12px;color:var(--text);font-size:13px;flex:1 1 160px;outline:none;transition:border-color .15s}
+.filter-input:focus{border-color:var(--accent)}
+.filter-select{background:var(--bgSurface);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;outline:none;cursor:pointer}
+
+/* List items */
+.list{display:flex;flex-direction:column;gap:5px}
+.list-item{background:var(--bgCard);border:1px solid var(--border);border-radius:8px;padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .15s}
+.list-item:hover{border-color:var(--borderHover)}
+.list-item.selected{background:var(--bgSurface);border-color:var(--accent)}
+.item-name{font-size:13px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item-sub{font-size:11px;color:var(--textMuted);margin-top:3px}
+.item-value{font-size:13px;color:var(--accent);font-family:'DM Mono',monospace;white-space:nowrap}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;font-size:10px;font-weight:500;padding:2px 8px;border-radius:20px;white-space:nowrap}
+.badge-lead{background:#1e3a6e;color:#93c5fd}
+.badge-proyecto{background:#2e1065;color:#c4b5fd}
+.badge-distribuidor{background:#042f2e;color:#5eead4}
+.badge-facilities{background:#451a03;color:#fcd34d}
+.badge-activo{background:#14532d;color:#86efac}
+.badge-negociacion{background:#1e3a6e;color:#93c5fd}
+.badge-pendiente{background:#451a03;color:#fcd34d}
+.badge-ganado{background:#14532d;color:#86efac}
+.badge-perdido{background:#450a0a;color:#fca5a5}
+.badge-inactivo{background:#1c1c1c;color:#6b7280}
+.badge-alta{background:#450a0a;color:#fca5a5}
+.badge-media{background:#3a2a00;color:#fcd34d}
+.badge-baja{background:#1c2333;color:#6b7280}
+.badge-hecha{background:#14532d;color:#86efac}
+.badge-encurso{background:#1e3a6e;color:#93c5fd}
+.badge-decisor{background:#2e1065;color:#c4b5fd}
+
+/* Priority groups */
+.prio-group{margin-bottom:20px}
+.prio-header{font-size:10px;color:var(--textMuted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+
+/* Detail panel */
+.detail-panel{position:fixed;right:0;top:0;bottom:0;width:380px;background:var(--bgCard);border-left:1px solid var(--border);z-index:200;overflow:auto;padding:24px;transform:translateX(100%);transition:transform .2s}
+.detail-panel.open{transform:translateX(0)}
+.detail-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+.detail-title{font-size:17px;font-weight:600;color:var(--text);margin-top:4px}
+.detail-type{font-size:11px;color:var(--textMuted);text-transform:uppercase;letter-spacing:.06em}
+.close-btn{background:none;border:none;color:var(--textMuted);cursor:pointer;font-size:22px;line-height:1;padding:0}
+.detail-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}
+.detail-key{font-size:12px;color:var(--textMuted)}
+.detail-val{font-size:12px;color:var(--textSub);max-width:200px;text-align:right}
+.detail-notes{font-size:12px;color:var(--textSub);margin-top:12px;line-height:1.6;padding:10px;background:var(--bgSurface);border-radius:6px}
+.detail-section{font-size:10px;color:var(--textMuted);text-transform:uppercase;letter-spacing:.06em;margin-top:18px;margin-bottom:8px}
+.detail-actions{display:flex;gap:8px;margin-top:20px}
+.detail-actions .btn-primary{flex:1}
+.mini-card{padding:8px 10px;background:var(--bgSurface);border-radius:6px;margin-bottom:6px}
+.mini-card-name{font-size:12px;color:var(--text);font-weight:500}
+.mini-card-sub{font-size:10px;color:var(--textMuted);margin-top:2px}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--bgCard);border:1px solid var(--border);border-radius:12px;width:100%;max-width:520px;max-height:90vh;overflow:auto;padding:24px}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.modal-title{font-size:15px;font-weight:600;color:var(--text)}
+
+/* Forms */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}
+.form-full{grid-column:1/-1}
+.form-group{margin-bottom:12px}
+.form-label{display:block;font-size:10px;color:var(--textMuted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em}
+.form-label span{color:var(--danger)}
+.form-input{width:100%;background:var(--bgSurface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;color:var(--text);font-size:13px;outline:none;transition:border-color .15s}
+.form-input:focus{border-color:var(--accent)}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* Avatar */
+.avatar{width:36px;height:36px;border-radius:50%;background:var(--accentSoft);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--accent);flex-shrink:0}
+
+/* Dashboard panels */
+.dash-panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:0}
+.dash-panel{background:var(--bgCard);border:1px solid var(--border);border-radius:10px;padding:16px}
+.dash-panel-title{font-size:11px;font-weight:500;color:var(--textSub);margin-bottom:12px;text-transform:uppercase;letter-spacing:.05em}
+
+/* Loading / toast */
+.loading{display:flex;align-items:center;justify-content:center;padding:60px;gap:10px;color:var(--textMuted);font-size:13px}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bgCard);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-size:13px;color:var(--text);z-index:2000;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.empty{text-align:center;padding:50px;color:var(--textMuted);font-size:13px}
+
+/* Mark done button */
+.mark-btn{background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;color:var(--textMuted);cursor:pointer;font-size:11px;white-space:nowrap;transition:all .15s;font-family:'DM Sans',sans-serif}
+.mark-btn.done{background:var(--successSoft);border-color:var(--success);color:var(--success)}
+.mark-btn:hover{border-color:var(--borderHover)}
+
+/* Responsive */
+@media(max-width:768px){
+  .sidebar{width:60px}
+  .sidebar-logo,.sidebar-sub,.nav-label,.sidebar-footer div{display:none}
+  .nav-btn{padding:12px;justify-content:center}
+  .nav-icon{width:auto}
+  .main{margin-left:60px}
+  .main.panel-open{margin-right:0}
+  .detail-panel{width:100%;top:auto;height:70vh}
+  .pills-grid{grid-template-columns:repeat(2,1fr)}
+  .dash-panels{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">CRM Limpieza</div>
+      <div class="sidebar-sub">Panel de gestión</div>
+    </div>
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" data-view="dashboard"><span class="nav-icon">▦</span><span class="nav-label">Dashboard</span></button>
+      <button class="nav-btn" data-view="entidades"><span class="nav-icon">◎</span><span class="nav-label">Empresas</span></button>
+      <button class="nav-btn" data-view="tareas"><span class="nav-icon">✓</span><span class="nav-label">Tareas</span></button>
+      <button class="nav-btn" data-view="contactos"><span class="nav-icon">◉</span><span class="nav-label">Contactos</span></button>
+    </nav>
+    <div class="sidebar-footer">
+      <div style="font-size:10px;color:var(--textMuted)" id="sync-status">● Sincronizado</div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <div class="content" id="content">
+      <div class="loading"><div class="spinner"></div> Cargando datos...</div>
+    </div>
+  </main>
+
+  <!-- Detail panel -->
+  <div class="detail-panel" id="detail-panel"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://script.google.com/macros/s/AKfycbylP7-M9rWmO6J0cV_s2DtfCzoWYIIaSTP0LQgcKXmxggFDhXUNKVBiYbPRbLud9zo5/exec';
+
+// ── State ──
+let state = { entidades: [], tareas: [], contactos: [] };
+let currentView = 'dashboard';
+let selectedItem = null;
+let selectedType = null;
+let editingItem = null;
+let filters = { tipo: '', estado: '', search: '' };
+let syncing = false;
+
+// ── API ──
+async function apiFetch(params) {
+  const url = new URL(API);
+  Object.entries(params).forEach(([k,v]) => url.searchParams.set(k,v));
+  const r = await fetch(url.toString());
+  return r.json();
+}
+
+async function apiPost(body) {
+  const r = await fetch(API, {
+    method: 'POST',
+    body: JSON.stringify(body),
+    headers: { 'Content-Type': 'application/json' }
+  });
+  return r.json();
+}
+
+async function loadAll() {
+  setSyncStatus('⟳ Cargando...');
+  try {
+    const [e, t, c] = await Promise.all([
+      apiFetch({ action: 'read', entity: 'entidades' }),
+      apiFetch({ action: 'read', entity: 'tareas' }),
+      apiFetch({ action: 'read', entity: 'contactos' }),
+    ]);
+    state.entidades = e.data || [];
+    state.tareas = t.data || [];
+    state.contactos = c.data || [];
+    setSyncStatus('● Sincronizado');
+    render();
+  } catch(err) {
+    setSyncStatus('✕ Error conexión');
+    showToast('Error al conectar con Google Sheets');
+  }
+}
+
+async function saveEntity(entity, data) {
+  setSyncStatus('⟳ Guardando...');
+  try {
+    await apiPost({ action: 'write', entity, data: state[entity] });
+    setSyncStatus('● Sincronizado');
+    showToast('Guardado correctamente');
+  } catch(err) {
+    setSyncStatus('✕ Error al guardar');
+    showToast('Error al guardar');
+  }
+}
+
+function setSyncStatus(msg) {
+  document.getElementById('sync-status').textContent = msg;
+}
+
+// ── Utils ──
+function genId(prefix) {
+  return prefix + Date.now().toString(36).toUpperCase().slice(-6);
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function badge(label) {
+  const map = {
+    'Lead':'lead','Proyecto':'proyecto','Distribuidor':'distribuidor','Facilities':'facilities',
+    'Activo':'activo','En negociación':'negociacion','Pendiente':'pendiente',
+    'Cerrado ganado':'ganado','Cerrado perdido':'perdido','Inactivo':'inactivo',
+    'Alta':'alta','Media':'media','Baja':'baja',
+    'Hecha':'hecha','En curso':'encurso','Decisor':'decisor',
+  };
+  const cls = map[label] || 'baja';
+  return `<span class="badge badge-${cls}">${label}</span>`;
+}
+
+function fmtVal(v) {
+  return v ? Number(v).toLocaleString('es-ES') + '€' : '';
+}
+
+// ── Navigation ──
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    currentView = btn.dataset.view;
+    selectedItem = null;
+    selectedType = null;
+    filters = { tipo: '', estado: '', search: '' };
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    closeDetail();
+    render();
+  });
+});
+
+// ── Render router ──
+function render() {
+  const c = document.getElementById('content');
+  if (currentView === 'dashboard') c.innerHTML = renderDashboard();
+  if (currentView === 'entidades') c.innerHTML = renderEntidades();
+  if (currentView === 'tareas')    c.innerHTML = renderTareas();
+  if (currentView === 'contactos') c.innerHTML = renderContactos();
+  bindListeners();
+}
+
+// ── Dashboard ──
+function renderDashboard() {
+  const { entidades, tareas } = state;
+  const pipeline = entidades.filter(e => !['Cerrado perdido','Inactivo'].includes(e.estado)).reduce((s,e) => s + (Number(e.valor)||0), 0);
+  const ganado = entidades.filter(e => e.estado === 'Cerrado ganado').reduce((s,e) => s + (Number(e.valor)||0), 0);
+  const activos = entidades.filter(e => ['Activo','En negociación'].includes(e.estado)).length;
+  const pendTareas = tareas.filter(t => t.estado !== 'Hecha').length;
+  const altaTareas = tareas.filter(t => t.prioridad === 'Alta' && t.estado !== 'Hecha').length;
+  const tipos = ['Lead','Proyecto','Distribuidor','Facilities'];
+  const tipoCounts = tipos.map(t => entidades.filter(e => e.tipo === t).length);
+  const tipoColors = [['#93c5fd','#1e3a6e'],['#c4b5fd','#2e1065'],['#5eead4','#042f2e'],['#fcd34d','#451a03']];
+
+  const urgentes = tareas.filter(t => t.prioridad === 'Alta' && t.estado !== 'Hecha').slice(0,6);
+  const oportunidades = entidades.filter(e => ['En negociación','Activo'].includes(e.estado)).slice(0,6);
+  const fecha = new Date().toLocaleDateString('es-ES', {weekday:'long',day:'numeric',month:'long'});
+
+  return `
+  <div class="topbar">
+    <h1>Dashboard</h1>
+    <span style="font-size:11px;color:var(--textMuted)">${fecha}</span>
+  </div>
+  <div class="stats-grid">
+    <div class="stat-card"><div class="stat-label">Pipeline total</div><div class="stat-value" style="color:var(--accent)">${(pipeline/1000).toFixed(0)}K€</div></div>
+    <div class="stat-card"><div class="stat-label">Ganado</div><div class="stat-value" style="color:var(--success)">${(ganado/1000).toFixed(0)}K€</div></div>
+    <div class="stat-card"><div class="stat-label">Activos</div><div class="stat-value">${activos}</div><div class="stat-sub">de ${entidades.length} total</div></div>
+    <div class="stat-card"><div class="stat-label">Tareas pend.</div><div class="stat-value" style="color:${altaTareas>0?'var(--warning)':'var(--text)'}">${pendTareas}</div><div class="stat-sub">${altaTareas} alta prioridad</div></div>
+  </div>
+  <div class="pills-grid">
+    ${tipos.map((t,i) => `<button class="pill-card" style="background:${tipoColors[i][1]}" data-filter-tipo="${t}">
+      <div class="pill-num" style="color:${tipoColors[i][0]}">${tipoCounts[i]}</div>
+      <div class="pill-label" style="color:${tipoColors[i][0]}">${t}</div>
+    </button>`).join('')}
+  </div>
+  <div class="dash-panels">
+    <div class="dash-panel">
+      <div class="dash-panel-title">Tareas urgentes</div>
+      ${urgentes.length ? urgentes.map(t => {
+        const emp = state.entidades.find(e => e.id === t.entidadId);
+        return `<div class="list-item" data-id="${t.id}" data-type="tarea" style="margin-bottom:4px">
+          <div style="flex:1;min-width:0">
+            <div class="item-name">${t.titulo}</div>
+            <div class="item-sub">${emp ? emp.nombre + ' · ' : ''}${t.fecha||''}</div>
+          </div>
+          ${badge(t.estado)}
+        </div>`;
+      }).join('') : '<div class="empty" style="padding:20px">Sin tareas urgentes</div>'}
+    </div>
+    <div class="dash-panel">
+      <div class="dash-panel-title">Oportunidades activas</div>
+      ${oportunidades.length ? oportunidades.map(e => `
+        <div class="list-item" data-id="${e.id}" data-type="entidad" style="margin-bottom:4px">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+              <span class="item-name">${e.nombre}</span>${badge(e.tipo)}
+            </div>
+          </div>
+          <span class="item-value">${fmtVal(e.valor)}</span>
+        </div>`).join('') : '<div class="empty" style="padding:20px">Sin oportunidades</div>'}
+    </div>
+  </div>`;
+}
+
+// ── Entidades ──
+function renderEntidades() {
+  const filtered = state.entidades.filter(e => {
+    if (filters.tipo && e.tipo !== filters.tipo) return false;
+    if (filters.estado && e.estado !== filters.estado) return false;
+    if (filters.search && !e.nombre.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    return true;
+  });
+  return `
+  <div class="topbar">
+    <h1>Empresas y proyectos</h1>
+    <button class="btn-primary" id="btn-new">+ Nuevo</button>
+  </div>
+  <div class="filters">
+    <input class="filter-input" id="f-search" placeholder="Buscar..." value="${filters.search}">
+    <select class="filter-select" id="f-tipo">
+      <option value="">Todos los tipos</option>
+      ${['Lead','Proyecto','Distribuidor','Facilities'].map(t=>`<option value="${t}"${filters.tipo===t?' selected':''}>${t}</option>`).join('')}
+    </select>
+    <select class="filter-select" id="f-estado">
+      <option value="">Todos los estados</option>
+      ${['Activo','En negociación','Pendiente','Cerrado ganado','Cerrado perdido','Inactivo'].map(t=>`<option value="${t}"${filters.estado===t?' selected':''}>${t}</option>`).join('')}
+    </select>
+  </div>
+  <div class="list">
+    ${filtered.length ? filtered.map(e => `
+      <div class="list-item${selectedItem?.id===e.id?' selected':''}" data-id="${e.id}" data-type="entidad">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap">
+            <span class="item-name">${e.nombre}</span>${badge(e.tipo)}${badge(e.estado)}
+          </div>
+          <div class="item-sub">${e.ciudad?e.ciudad+' · ':''}${e.responsable?'Resp: '+e.responsable:''}</div>
+        </div>
+        <span class="item-value">${fmtVal(e.valor)}</span>
+      </div>`).join('') : '<div class="empty">No hay resultados</div>'}
+  </div>`;
+}
+
+// ── Tareas ──
+function renderTareas() {
+  const filtered = state.tareas.filter(t => {
+    if (filters.estado && t.estado !== filters.estado) return false;
+    if (filters.search && !t.titulo.toLowerCase().includes(filters.search.toLowerCase())) return false;
+    return true;
+  });
+  const grupos = ['Alta','Media','Baja'].map(p => ({ p, items: filtered.filter(t => t.prioridad === p) })).filter(g => g.items.length);
+
+  return `
+  <div class="topbar">
+    <h1>Tareas</h1>
+    <button class="btn-primary" id="btn-new">+ Nueva tarea</button>
+  </div>
+  <div class="filters">
+    <input class="filter-input" id="f-search" placeholder="Buscar..." value="${filters.search}">
+    <select class="filter-select" id="f-estado">
+      <option value="">Todos los estados</option>
+      ${['Pendiente','En curso','Hecha'].map(t=>`<option value="${t}"${filters.estado===t?' selected':''}>${t}</option>`).join('')}
+    </select>
+  </div>
+  ${grupos.map(g => `
+    <div class="prio-group">
+      <div class="prio-header">${badge(g.p)} <span>(${g.items.length})</span></div>
+      <div class="list">
+        ${g.items.map(t => {
+          const emp = state.entidades.find(e => e.id === t.entidadId);
+          return `<div class="list-item${selectedItem?.id===t.id?' selected':''}" data-id="${t.id}" data-type="tarea">
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap">
+                <span class="item-name" style="${t.estado==='Hecha'?'text-decoration:line-through;color:var(--textMuted)':''}">${t.titulo}</span>
+                ${badge(t.tipo||'')}${badge(t.estado)}
+              </div>
+              <div class="item-sub">${emp?emp.nombre+' · ':''}${t.fecha||''}</div>
+            </div>
+            <button class="mark-btn${t.estado==='Hecha'?' done':''}" data-toggle="${t.id}">${t.estado==='Hecha'?'✓ Hecha':'Marcar'}</button>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`).join('')}
+  ${filtered.length === 0 ? '<div class="empty">No hay tareas</div>' : ''}`;
+}
+
+// ── Contactos ──
+function renderContactos() {
+  return `
+  <div class="topbar">
+    <h1>Contactos</h1>
+    <button class="btn-primary" id="btn-new">+ Nuevo</button>
+  </div>
+  <div class="list">
+    ${state.contactos.length ? state.contactos.map(c => {
+      const emp = state.entidades.find(e => e.id === c.entidadId);
+      const initials = c.nombre.split(' ').map(n=>n[0]).slice(0,2).join('');
+      return `<div class="list-item${selectedItem?.id===c.id?' selected':''}" data-id="${c.id}" data-type="contacto">
+        <div class="avatar">${initials}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+            <span class="item-name">${c.nombre}</span>
+            ${c.decisor==='true'||c.decisor===true?badge('Decisor'):''}
+          </div>
+          <div class="item-sub">${c.cargo?c.cargo:''}${emp?' · '+emp.nombre:''}</div>
+        </div>
+        ${c.email?`<span style="font-size:11px;color:var(--textMuted)">${c.email}</span>`:''}
+      </div>`;
+    }).join('') : '<div class="empty">No hay contactos</div>'}
+  </div>`;
+}
+
+// ── Detail panel ──
+function openDetail(item, type) {
+  selectedItem = item;
+  selectedType = type;
+  const panel = document.getElementById('detail-panel');
+  panel.innerHTML = renderDetail(item, type);
+  panel.classList.add('open');
+  document.getElementById('main').classList.add('panel-open');
+  bindDetailListeners();
+}
+
+function closeDetail() {
+  selectedItem = null;
+  selectedType = null;
+  document.getElementById('detail-panel').classList.remove('open');
+  document.getElementById('main').classList.remove('panel-open');
+}
+
+function renderDetail(item, type) {
+  const rows = (pairs) => pairs.filter(([,v])=>v).map(([k,v])=>`
+    <div class="detail-row"><span class="detail-key">${k}</span><span class="detail-val">${v}</span></div>`).join('');
+
+  let html = `<div class="detail-header">
+    <div><div class="detail-type">${type==='entidad'?item.tipo:type==='tarea'?'Tarea':'Contacto'}</div>
+    <div class="detail-title">${item.nombre||item.titulo||''}</div></div>
+    <button class="close-btn" id="btn-close-detail">×</button>
+  </div>`;
+
+  if (type === 'entidad') {
+    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">${badge(item.tipo)}${badge(item.estado)}</div>`;
+    html += rows([['Ciudad',item.ciudad],['Responsable',item.responsable],['Email',item.email],['Teléfono',item.tel],['Valor est.',fmtVal(item.valor)],['Alta',item.fecha]]);
+    if (item.notas) html += `<div class="detail-notes">${item.notas}</div>`;
+    const conts = state.contactos.filter(c => c.entidadId === item.id);
+    if (conts.length) {
+      html += `<div class="detail-section">Contactos</div>`;
+      html += conts.map(c=>`<div class="mini-card"><div class="mini-card-name">${c.nombre}</div><div class="mini-card-sub">${c.cargo||''}</div></div>`).join('');
+    }
+    const tars = state.tareas.filter(t => t.entidadId === item.id);
+    if (tars.length) {
+      html += `<div class="detail-section">Tareas vinculadas</div>`;
+      html += tars.map(t=>`<div class="mini-card" style="display:flex;justify-content:space-between;align-items:center"><div><div class="mini-card-name">${t.titulo}</div><div class="mini-card-sub">${t.fecha||''}</div></div>${badge(t.estado)}</div>`).join('');
+    }
+  }
+
+  if (type === 'tarea') {
+    const emp = state.entidades.find(e => e.id === item.entidadId);
+    html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">${badge(item.tipo||'')}${badge(item.prioridad)}${badge(item.estado)}</div>`;
+    if (emp) html += `<div class="mini-card" style="margin-bottom:12px;display:flex;align-items:center;gap:8px"><span style="font-size:11px;color:var(--textMuted)">Empresa:</span><span style="font-size:12px;font-weight:500;color:var(--text)">${emp.nombre}</span>${badge(emp.tipo)}</div>`;
+    html += rows([['Fecha límite',item.fecha]]);
+    if (item.notas) html += `<div class="detail-notes">${item.notas}</div>`;
+  }
+
+  if (type === 'contacto') {
+    const emp = state.entidades.find(e => e.id === item.entidadId);
+    if (item.decisor==='true'||item.decisor===true) html += `<div style="margin-bottom:12px">${badge('Decisor')}</div>`;
+    if (emp) html += `<div class="mini-card" style="margin-bottom:12px"><span style="font-size:11px;color:var(--textMuted)">Empresa: </span><span style="font-size:12px;font-weight:500">${emp.nombre}</span></div>`;
+    html += rows([['Cargo',item.cargo],['Email',item.email],['Teléfono',item.tel]]);
+    if (item.notas) html += `<div class="detail-notes">${item.notas}</div>`;
+  }
+
+  html += `<div class="detail-actions">
+    <button class="btn-primary" id="btn-edit-detail">Editar</button>
+    <button class="btn-danger" id="btn-del-detail">Eliminar</button>
+  </div>`;
+  return html;
+}
+
+// ── Modals ──
+function openModal(type, item = null) {
+  editingItem = item;
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.id = 'modal-overlay';
+  overlay.innerHTML = renderModal(type, item);
+  document.body.appendChild(overlay);
+  bindModalListeners(type);
+}
+
+function closeModal() {
+  const m = document.getElementById('modal-overlay');
+  if (m) m.remove();
+  editingItem = null;
+}
+
+function renderModal(type, item) {
+  const v = item || {};
+  const title = item ? `Editar ${type}` : `Nuevo ${type==='entidad'?'empresa / proyecto':type==='tarea'?'tarea':'contacto'}`;
+
+  let fields = '';
+  if (type === 'entidad') {
+    fields = `
+    <div class="form-grid">
+      <div class="form-full form-group"><label class="form-label">Nombre <span>*</span></label><input class="form-input" name="nombre" value="${v.nombre||''}"></div>
+      <div class="form-group"><label class="form-label">Tipo <span>*</span></label><select class="form-input" name="tipo">${['Lead','Proyecto','Distribuidor','Facilities'].map(t=>`<option${v.tipo===t?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Estado <span>*</span></label><select class="form-input" name="estado">${['Activo','En negociación','Pendiente','Cerrado ganado','Cerrado perdido','Inactivo'].map(t=>`<option${v.estado===t?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Ciudad</label><input class="form-input" name="ciudad" value="${v.ciudad||''}"></div>
+      <div class="form-group"><label class="form-label">Responsable</label><input class="form-input" name="responsable" value="${v.responsable||''}"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" name="email" type="email" value="${v.email||''}"></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" name="tel" value="${v.tel||''}"></div>
+      <div class="form-full form-group"><label class="form-label">Valor estimado (€)</label><input class="form-input" name="valor" type="number" value="${v.valor||''}"></div>
+      <div class="form-full form-group"><label class="form-label">Notas</label><textarea class="form-input" name="notas" rows="3">${v.notas||''}</textarea></div>
+    </div>`;
+  }
+  if (type === 'tarea') {
+    fields = `
+    <div class="form-grid">
+      <div class="form-full form-group"><label class="form-label">Tarea <span>*</span></label><input class="form-input" name="titulo" value="${v.titulo||''}"></div>
+      <div class="form-group"><label class="form-label">Tipo</label><select class="form-input" name="tipo">${['Llamada','Email','Reunión','Demo','Propuesta','Seguimiento','Otro'].map(t=>`<option${v.tipo===t?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Prioridad</label><select class="form-input" name="prioridad">${['Alta','Media','Baja'].map(t=>`<option${v.prioridad===t?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="form-full form-group"><label class="form-label">Empresa / Proyecto</label><select class="form-input" name="entidadId"><option value="">— Sin vincular —</option>${state.entidades.map(e=>`<option value="${e.id}"${v.entidadId===e.id?' selected':''}>[${e.tipo}] ${e.nombre}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Estado</label><select class="form-input" name="estado">${['Pendiente','En curso','Hecha'].map(t=>`<option${v.estado===t?' selected':''}>${t}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Fecha límite</label><input class="form-input" name="fecha" type="date" value="${v.fecha||''}"></div>
+      <div class="form-full form-group"><label class="form-label">Notas</label><textarea class="form-input" name="notas" rows="2">${v.notas||''}</textarea></div>
+    </div>`;
+  }
+  if (type === 'contacto') {
+    fields = `
+    <div class="form-grid">
+      <div class="form-full form-group"><label class="form-label">Nombre <span>*</span></label><input class="form-input" name="nombre" value="${v.nombre||''}"></div>
+      <div class="form-group"><label class="form-label">Cargo</label><input class="form-input" name="cargo" value="${v.cargo||''}"></div>
+      <div class="form-group"><label class="form-label">Empresa</label><select class="form-input" name="entidadId"><option value="">— Sin vincular —</option>${state.entidades.map(e=>`<option value="${e.id}"${v.entidadId===e.id?' selected':''}>${e.nombre}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" name="email" type="email" value="${v.email||''}"></div>
+      <div class="form-group"><label class="form-label">Teléfono</label><input class="form-input" name="tel" value="${v.tel||''}"></div>
+      <div class="form-full form-group" style="display:flex;align-items:center;gap:8px;margin-top:4px"><input type="checkbox" name="decisor" id="chk-decisor"${v.decisor==='true'||v.decisor===true?' checked':''}><label for="chk-decisor" style="font-size:13px;color:var(--textSub)">Es decisor de compra</label></div>
+      <div class="form-full form-group"><label class="form-label">Notas</label><textarea class="form-input" name="notas" rows="2">${v.notas||''}</textarea></div>
+    </div>`;
+  }
+
+  return `<div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">${title}</span>
+      <button class="close-btn" id="btn-close-modal">×</button>
+    </div>
+    <form id="crm-form">${fields}
+      <div class="form-actions">
+        <button type="button" class="btn-secondary" id="btn-cancel-modal">Cancelar</button>
+        <button type="submit" class="btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>`;
+}
+
+// ── Bind listeners ──
+function bindListeners() {
+  // List items
+  document.querySelectorAll('.list-item[data-id]').forEach(el => {
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('.mark-btn')) return;
+      const id = el.dataset.id;
+      const type = el.dataset.type;
+      const item = type === 'entidad' ? state.entidades.find(x=>x.id===id)
+                 : type === 'tarea'   ? state.tareas.find(x=>x.id===id)
+                 : state.contactos.find(x=>x.id===id);
+      if (item) { openDetail(item, type); render(); }
+    });
+  });
+
+  // Mark done buttons
+  document.querySelectorAll('.mark-btn[data-toggle]').forEach(btn => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.toggle;
+      const t = state.tareas.find(x => x.id === id);
+      if (t) {
+        t.estado = t.estado === 'Hecha' ? 'Pendiente' : 'Hecha';
+        render();
+        await saveEntity('tareas', state.tareas);
+      }
+    });
+  });
+
+  // New button
+  const btnNew = document.getElementById('btn-new');
+  if (btnNew) btnNew.addEventListener('click', () => {
+    const type = currentView === 'entidades' ? 'entidad' : currentView === 'tareas' ? 'tarea' : 'contacto';
+    openModal(type);
+  });
+
+  // Filters
+  const fs = document.getElementById('f-search');
+  if (fs) fs.addEventListener('input', e => { filters.search = e.target.value; render(); });
+  const ft = document.getElementById('f-tipo');
+  if (ft) ft.addEventListener('change', e => { filters.tipo = e.target.value; render(); });
+  const fe = document.getElementById('f-estado');
+  if (fe) fe.addEventListener('change', e => { filters.estado = e.target.value; render(); });
+
+  // Dashboard pill filters
+  document.querySelectorAll('[data-filter-tipo]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      currentView = 'entidades';
+      filters.tipo = btn.dataset.filterTipo;
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+      document.querySelector('[data-view="entidades"]').classList.add('active');
+      render();
+    });
+  });
+}
+
+function bindDetailListeners() {
+  document.getElementById('btn-close-detail')?.addEventListener('click', () => { closeDetail(); render(); });
+  document.getElementById('btn-edit-detail')?.addEventListener('click', () => {
+    const type = selectedType === 'entidad' ? 'entidad' : selectedType === 'tarea' ? 'tarea' : 'contacto';
+    openModal(type, selectedItem);
+  });
+  document.getElementById('btn-del-detail')?.addEventListener('click', async () => {
+    if (!confirm('¿Eliminar este registro?')) return;
+    const key = selectedType === 'entidad' ? 'entidades' : selectedType === 'tarea' ? 'tareas' : 'contactos';
+    state[key] = state[key].filter(x => x.id !== selectedItem.id);
+    closeDetail();
+    render();
+    await saveEntity(key, state[key]);
+  });
+}
+
+function bindModalListeners(type) {
+  document.getElementById('btn-close-modal')?.addEventListener('click', closeModal);
+  document.getElementById('btn-cancel-modal')?.addEventListener('click', closeModal);
+  document.getElementById('crm-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const data = {};
+    new FormData(form).forEach((v,k) => data[k] = v);
+    // checkbox decisor
+    const chk = form.querySelector('[name="decisor"]');
+    if (chk) data.decisor = chk.checked;
+
+    const key = type === 'entidad' ? 'entidades' : type === 'tarea' ? 'tareas' : 'contactos';
+    if (editingItem) {
+      Object.assign(editingItem, data);
+      state[key] = state[key].map(x => x.id === editingItem.id ? editingItem : x);
+      if (selectedItem?.id === editingItem.id) selectedItem = editingItem;
+    } else {
+      const prefix = type === 'entidad' ? 'E' : type === 'tarea' ? 'T' : 'C';
+      data.id = genId(prefix);
+      if (!data.fecha) data.fecha = today();
+      state[key].push(data);
+    }
+    closeModal();
+    closeDetail();
+    render();
+    await saveEntity(key, state[key]);
+  });
+
+  // Close on overlay click
+  document.getElementById('modal-overlay')?.addEventListener('click', (e) => {
+    if (e.target.id === 'modal-overlay') closeModal();
+  });
+}
+
+// ── Init ──
+loadAll();
+</script>
+</body>
+</html>
