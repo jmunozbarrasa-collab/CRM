@@ -547,12 +547,18 @@ function renderList(){
       const item=(state[km[type]]||[]).find(x=>x.id===id);
       if(item){openDetail(item,type);render();}
     });
+    let dblTimer=null;
     el.addEventListener('dblclick',e=>{
-      if(e.target.closest('.mark-btn')||e.target.closest('.demo-btn')||e.target.closest('[onclick]')) return;
+      if(e.target.closest('.mark-btn')||e.target.closest('[onclick]')) return;
+      e.stopImmediatePropagation();
+      clearTimeout(dblTimer);
       const id=el.dataset.id,type=el.dataset.type;
       const km={proyecto:'proyectos',distribuidor:'distribuidores',lead:'leads',facility:'facilities',tarea:'tareas'};
       const item=(state[km[type]]||[]).find(x=>x.id===id);
-      if(item&&(type==='tarea'||type==='proyecto')){openModal(type,item);}
+      if(item&&(type==='tarea'||type==='proyecto')){
+        selectedItem=item;selectedType=type;
+        openModal(type,item);
+      }
     });
   });
   document.querySelectorAll('.mark-btn[data-toggle]').forEach(btn=>{
