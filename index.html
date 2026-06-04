@@ -561,20 +561,25 @@ function renderList(){
   if(newStats&&statsEl)statsEl.innerHTML=newStats.innerHTML;
   // Re-bind list item clicks
   document.querySelectorAll('.list-item[data-id]').forEach(el=>{
-    el._clicks=0;
     el.addEventListener('click',e=>{
       if(e.target.closest('.mark-btn')||e.target.closest('.demo-btn')||e.target.closest('[data-hot-id]')) return;
       const id=el.dataset.id,type=el.dataset.type;
       const km={proyecto:'proyectos',distribuidor:'distribuidores',lead:'leads',facility:'facilities',tarea:'tareas'};
       const item=(state[km[type]]||[]).find(x=>x.id===id);
       if(!item) return;
-      el._clicks++;
-      clearTimeout(el._clickTimer);
-      el._clickTimer=setTimeout(()=>{
-        if(el._clicks===1){openDetail(item,type);render();}
-        else if(el._clicks>=2&&(type==='tarea'||type==='proyecto')){selectedItem=item;selectedType=type;openModal(type,item);}
-        el._clicks=0;
-      },250);
+      // Highlight selected without full render
+      document.querySelectorAll('.list-item.selected').forEach(x=>x.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedItem=item; selectedType=type;
+      openDetail(item,type);
+    });
+    el.addEventListener('dblclick',e=>{
+      if(e.target.closest('.mark-btn')||e.target.closest('.demo-btn')||e.target.closest('[data-hot-id]')) return;
+      const id=el.dataset.id,type=el.dataset.type;
+      if(type!=='tarea'&&type!=='proyecto') return;
+      const km={proyecto:'proyectos',tarea:'tareas'};
+      const item=(state[km[type]]||[]).find(x=>x.id===id);
+      if(item){selectedItem=item;selectedType=type;openModal(type,item);}
     });
   });
   document.querySelectorAll('.mark-btn[data-toggle]').forEach(btn=>{
